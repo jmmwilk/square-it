@@ -42,5 +42,29 @@ body {
 }
 
 #side-bar {
+	display: flex;
+	flex-direction: column;
+}
+
+#rectangle-container {
+	display: flex;
 	position: relative;
+	flex-direction: column;
+	border: solid black 1px;
+	height: 200px;
+	width: 200px;
+}
+
+#points-container {
+	align-self: flex-end;
+	border: black solid 1px;
+	width: 100px;
+	height: 50px;
+	font-size: 40px;
+}
+
+#event-container {
+	border: solid black 1px;
+	height: 200px;
+	width: 200px;
 }
