@@ -14,19 +14,18 @@ let highestX = 1;
 let highestY = 1;
 let bigSquareSide = 1;
 let points = 0;
+let draggedDrawing;
 
 function start () {
   drawSquaresInGame ();
   createRectangle ();
 
   let game = document.getElementById('application');
-  game.ondrop = dropRectangle;
+  game.ondrop = dropDrawing;
 
   game.ondragover= function (event) {
     event.preventDefault();
   }
-
-  createGoat ();
 }
 
 function drawSquaresInGame () {
@@ -37,18 +36,18 @@ function drawSquaresInGame () {
     x = count % n + 1;
     y = Math.floor (count / n) + 1;
     count = count + 1;
-    drawSquare (game, 'white', x, y);
+    drawSquare (game, x, y);
   }
 }
 
-function drawSquare (parent, color, x, y) {
+function drawSquare (parent, x, y) {
   let square = document.createElement("div");
   square.className = 'square';
   parent.appendChild(square);
-  square.style.backgroundColor = color;
   square.x = x;
   square.y = y;
-  square.id = x + 'square' + y
+  square.id = parent.id + x + 'square' + y;
+  square.isOccupied = false;
 
   square.onmousedown = function(event) {
     dragStartX = event.target.x;
@@ -66,10 +65,6 @@ function createRectangle () {
 
 
 function drawRectangle () {
-  const oldRectangle = document.getElementById('rectangle');
-  if (oldRectangle) {
-    document.getElementById('rectangle-container').removeChild(oldRectangle);
-  } 
   let rectangle = document.createElement("div");
   rectangle.onclick = turnRectangle
   rectangle.id = 'rectangle';
@@ -78,15 +73,17 @@ function drawRectangle () {
   rectangle.style.width = (width * 50 + 2) + 'px';
   rectangle.draggable = true;
   rectangle.ondragstart = function(event) {
-    event.dataTransfer.setData("text/plain", event.target.id);
+    draggedDrawing = event.target;
+    event.dataTransfer.setData("text/plain", event.target.parentNode.id);
     console.log('ondragstart: ', event);
   }
-  document.getElementById('rectangle-container').appendChild(rectangle);
+  document.getElementById('event-container').appendChild(rectangle);
   drawSquaresInRectangle(rectangle);
 }
 
 
 function turnRectangle () {
+  removeOldRectangle ();
   let oldHeight = height;
   let oldWidth = width;
   height = oldWidth;
@@ -95,16 +92,16 @@ function turnRectangle () {
 }
 
 function drawSquaresInRectangle (rectangle) {
-  console.log ('width' + width);
-  console.log ('height' + height);
+  // console.log ('width' + width);
+  // console.log ('height' + height);
   count = 0;
   for (i=0; i<multiplication; i++) {
     x = count % width + 1;
     y = Math.floor (count / width) + 1;
 
     count = count + 1
-    drawSquare(rectangle, 'green', x, y);
-    createLettuce (x + 'square' + y);
+    drawSquare(rectangle, x, y);
+    createLettuce ('rectangle' + x + 'square' + y);
   }
 }
 
@@ -121,6 +118,7 @@ function dropRectangle (event) {
   const endX = startX + width;
   const startY = cornerCoordinates.cornerY;
   const endY = startY + height;
+  // console.log ('cornerCoordinates.cornerX ' + cornerCoordinates.cornerX)
 
   if (isEmptyArea(startX, endX, startY, endY) == false) {
     return;
@@ -128,12 +126,13 @@ function dropRectangle (event) {
 
   for (let x = startX;  x < endX;  x++) {
     for (let y = startY;  y < endY; y++) {
-      findSquare (x, y).style.backgroundColor = 'green';
+      createLettuce ('game' + x + 'square' + y);
+      findSquare ('game', x, y).isOccupied = true;
+      removeOldRectangle ();
     }
   }
-
-  createRectangle ();
   isSquareDone ();
+  createEvent ();
 }
 
 function isSquareDone () {
@@ -143,16 +142,12 @@ function isSquareDone () {
   // console.log ('smallestY ' + smallestY);
   for (let x = smallestX; x <= smallestX + bigSquareSide - 1; x++) {
     for (let y = smallestY; y <= smallestY + bigSquareSide - 1; y++) {
-      console.log ('x ' + x);
-      console.log ('y ' + y);
-      if (findSquare (x, y).style.backgroundColor == 'white') {
+      // console.log ('x ' + x);
+      // console.log ('y ' + y);
+      console.log(findSquare ('game', x, y).isOccupied);
+      if (findSquare ('game', x, y).isOccupied !== true) {
         return
       }
-    }
-  }
-  for (let x = smallestX; x < smallestX + bigSquareSide - 1; x++) {
-    for (let y = smallestY; y < smallestY + bigSquareSide - 1; y++) {
-      findSquare (x, y).style.backgroundColor == 'green'
     }
   }
   points = points + bigSquareSide * bigSquareSide;
@@ -162,34 +157,42 @@ function isSquareDone () {
 
 function newRound () {
   bigSquareSide = 1;
-  smallestX = 1;
-  smallestY = 1;
+  smallestX = n;
+  smallestY = n;
   highestX = 1;
   highestY = 1;
   for (let x = 1; x < n + 1; x++) {
     for (let y = 1; y < n + 1; y++) {
-      findSquare (x, y).style.backgroundColor = 'white';
+      if (findSquare ('game', x, y).isOccupied == true) {
+        setTimeout (function () {removeLettuce (x, y)}, 1000);
+        findSquare ('game', x, y).isOccupied = false;        
+      }
     }
   }
+}
+
+function removeLettuce (x, y) {
+  findSquare ('game', x, y).removeChild(findSquare ('game', x, y).childNodes[0])
 }
 
 function findCornerDimensions () {
 
   for (let x = 1; x < n + 1; x++) {
     for (let y = 1; y < n + 1; y++) {
-      if (findSquare (x, y).style.backgroundColor == 'green') {
-        if (findSquare (x, y).x < smallestX) {
-          smallestX = findSquare (x, y).x;
+      let square = findSquare ('game', x, y);
+      if (square.isOccupied == true) {
+        if (square.x < smallestX) {
+          smallestX = square.x;
         }
-        if (findSquare (x, y).y < smallestY) {
-          smallestY = findSquare (x, y).y;
+        if (square.y < smallestY) {
+          smallestY = square.y;
         }
-        if (findSquare (x, y).x > highestX ) {
-          highestX = findSquare (x, y).x;
-          console.log('square x'  + findSquare (x, y).x);
+        if (square.x > highestX ) {
+          highestX = findSquare ('game', x, y).x;
+          // console.log('square x'  + findSquare ('game', x, y).x);
         }
-        if (findSquare (x, y).y > highestY) {
-          highestY = findSquare (x, y).y;
+        if (square.y > highestY) {
+          highestY = square.y;
         } 
       }
     }
@@ -198,11 +201,11 @@ function findCornerDimensions () {
   if (bigSquareSide < highestY - smallestY + 1) {
     bigSquareSide = highestY - smallestY + 1
   }
-  // console.log ('bigSquareSide ' + bigSquareSide);
-  // console.log ('smallestX ' + smallestX);
-  // console.log ('smallestY ' + smallestY);
-  // console.log('highestX ' + highestX);
-  // console.log('highestY ' + highestY);
+  console.log ('bigSquareSide ' + bigSquareSide);
+  console.log ('smallestX ' + smallestX);
+  console.log ('smallestY ' + smallestY);
+  console.log('highestX ' + highestX);
+  console.log('highestY ' + highestY);
 }
 
 function findCornerSquare (event) {
@@ -215,19 +218,21 @@ function findCornerSquare (event) {
   return cornerCoordinates;
 }
 
-function findSquare (x, y) {
-  return document.getElementById(x + 'square' + y);
+function findSquare (parentId, x, y) {
+  return document.getElementById(parentId + x + 'square' + y);
 }
 
 function isEmptyArea (startX, endX, startY, endY) {
-  console.log ('startX ' + startX);
-  console.log ('startY ' + startY);
-  console.log ('endX ' + endX);
-  console.log ('endY ' + endY);
+  // console.log ('startX ' + startX);
+  // console.log ('startY ' + startY);
+  // console.log ('endX ' + endX);
+  // console.log ('endY ' + endY);
 
   for (let x = startX;  x < endX;  x++) {
     for (let y = startY;  y < endY; y++) {
-      if (findSquare (x, y).style.backgroundColor == 'green') {
+      // console.log ('x' + x);
+      // console.log ('y' + y);
+      if (findSquare ('game', x, y).isOccupied == true) {
         return false;
       }
     }
@@ -242,18 +247,64 @@ function addImage (parentId) {
     return image
 }
 
-function createGoat () {
-  let goat = addImage('event-container');
+function createGoat (parentId) {
+  let goat = addImage(parentId);
   goat.src = 'koza.png'
   goat.draggable = true;
+  goat.className = 'goat';
   goat.ondragstart = function(event) {
+    draggedDrawing = event.target;
     event.dataTransfer.setData("text/plain", event.target.id);
     console.log('ondragstart: ', event);
   }
-  document.getElementById('event-container').appendChild(goat);
+  return goat;
 }
 
 function createLettuce (parentId) {
   let lettuce = addImage (parentId);
+  lettuce.className = 'lettuce';
   lettuce.src = 'lettuce.png';
+}
+
+function createEvent () {
+  let number = Math.floor (Math.random () * 2);
+  if (number == 0) {
+    createGoat ('event-container');
+  } else {
+    createRectangle ();
+  }
+}
+function removeOldRectangle () {
+ const oldRectangle = document.getElementById('rectangle');
+  if (oldRectangle) {
+    document.getElementById('event-container').removeChild(oldRectangle);
+  }  
+}
+
+function dropDrawing (event) {
+  if (draggedDrawing.className == 'rectangle') {
+    dropRectangle (event)
+  }
+  if (draggedDrawing.className == 'goat') {
+    dropGoat (event);
+  }
+}
+
+function dropGoat (event) {
+  console.log('ondrop: ', event);
+  let animationGoat = createGoat ('game');
+  animationGoat.className = 'animationGoat';
+  animationGoat.style.left = event.target.offsetLeft + 'px';
+  animationGoat.style.top = event.target.offsetTop + 'px';
+  for (i=0; i<10; i++) {
+    setTimeout (function () {
+      animationGoat.style.left = event.target.offsetLeft - i * 50 + 'px';
+      console.log ('animationGoat.style.left ' + animationGoat.style.left);
+      console.log (i);
+    }, i*500)
+  }
+}
+
+function runGoat () {
+  animationGoat.style.left = event.target.offsetLeft - i * 50 + 'px';
 }
