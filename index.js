@@ -15,6 +15,7 @@ let highestY = 1;
 let bigSquareSide = 1;
 let points = 0;
 let draggedDrawing;
+let goatType;
 
 function start () {
   drawSquaresInGame ();
@@ -57,7 +58,7 @@ function drawSquare (parent, x, y) {
 
 
 function createRectangle () {
-  height = Math.floor (Math.random () * 2) + 1;
+  height = Math.floor (Math.random () * 3) + 1;
   width = Math.floor (Math.random () * 2) + 1;
   multiplication = height * width;
   drawRectangle ()
@@ -144,8 +145,9 @@ function isSquareDone () {
     for (let y = smallestY; y <= smallestY + bigSquareSide - 1; y++) {
       // console.log ('x ' + x);
       // console.log ('y ' + y);
-      console.log(findSquare ('game', x, y).isOccupied);
+      // console.log(findSquare ('game', x, y).isOccupied);
       if (findSquare ('game', x, y).isOccupied !== true) {
+        // console.log ('square empty' + findSquare ('game', x, y).id);
         return
       }
     }
@@ -164,15 +166,17 @@ function newRound () {
   for (let x = 1; x < n + 1; x++) {
     for (let y = 1; y < n + 1; y++) {
       if (findSquare ('game', x, y).isOccupied == true) {
-        setTimeout (function () {removeLettuce (x, y)}, 1000);
-        findSquare ('game', x, y).isOccupied = false;        
+        setTimeout (function () {removeLettuce (x, y)}, 500);        
       }
     }
   }
 }
 
 function removeLettuce (x, y) {
-  findSquare ('game', x, y).removeChild(findSquare ('game', x, y).childNodes[0])
+  findSquare ('game', x, y).removeChild(findSquare ('game', x, y).childNodes[0]);
+  findSquare ('game', x, y).isOccupied = false;
+  // console.log (findSquare ('game', x, y).id);
+  // console.log (findSquare ('game', x, y).isOccupied);
 }
 
 function findCornerDimensions () {
@@ -189,10 +193,11 @@ function findCornerDimensions () {
         }
         if (square.x > highestX ) {
           highestX = findSquare ('game', x, y).x;
-          // console.log('square x'  + findSquare ('game', x, y).x);
+          console.log(square.id);
         }
         if (square.y > highestY) {
           highestY = square.y;
+          console.log(square.id);
         } 
       }
     }
@@ -201,11 +206,11 @@ function findCornerDimensions () {
   if (bigSquareSide < highestY - smallestY + 1) {
     bigSquareSide = highestY - smallestY + 1
   }
-  console.log ('bigSquareSide ' + bigSquareSide);
-  console.log ('smallestX ' + smallestX);
-  console.log ('smallestY ' + smallestY);
-  console.log('highestX ' + highestX);
-  console.log('highestY ' + highestY);
+  // console.log ('bigSquareSide ' + bigSquareSide);
+  // console.log ('smallestX ' + smallestX);
+  // console.log ('smallestY ' + smallestY);
+  // console.log('highestX ' + highestX);
+  // console.log('highestY ' + highestY);
 }
 
 function findCornerSquare (event) {
@@ -248,16 +253,30 @@ function addImage (parentId) {
 }
 
 function createGoat (parentId) {
-  let goat = addImage(parentId);
-  goat.src = 'koza.png'
+  goat = addImage(parentId);
+  if (goatType == 'goat-horizontal') {
+    goat.src = 'goat-horizontal.png';
+  }
+  if (goatType == 'goat-vertical') {
+    goat.src = 'goat-vertical.png';
+  }
   goat.draggable = true;
-  goat.className = 'goat';
+  goat.id = 'goat';
   goat.ondragstart = function(event) {
     draggedDrawing = event.target;
     event.dataTransfer.setData("text/plain", event.target.id);
     console.log('ondragstart: ', event);
   }
   return goat;
+}
+
+function chooseGoat () {
+  let number = Math.floor (Math.random () * 2);
+  if (number == 0) {
+    goatType = 'goat-horizontal';
+  } else {
+    goatType = 'goat-vertical';
+  }
 }
 
 function createLettuce (parentId) {
@@ -267,13 +286,15 @@ function createLettuce (parentId) {
 }
 
 function createEvent () {
-  let number = Math.floor (Math.random () * 2);
+  let number = Math.floor (Math.random () * 3);
   if (number == 0) {
-    createGoat ('event-container');
+      chooseGoat ();
+      createGoat ('event-container');
   } else {
     createRectangle ();
   }
 }
+
 function removeOldRectangle () {
  const oldRectangle = document.getElementById('rectangle');
   if (oldRectangle) {
@@ -285,7 +306,7 @@ function dropDrawing (event) {
   if (draggedDrawing.className == 'rectangle') {
     dropRectangle (event)
   }
-  if (draggedDrawing.className == 'goat') {
+  if (draggedDrawing.id == 'goat') {
     dropGoat (event);
   }
 }
@@ -293,18 +314,86 @@ function dropDrawing (event) {
 function dropGoat (event) {
   console.log('ondrop: ', event);
   let animationGoat = createGoat ('game');
-  animationGoat.className = 'animationGoat';
-  animationGoat.style.left = event.target.offsetLeft + 'px';
-  animationGoat.style.top = event.target.offsetTop + 'px';
-  for (i=0; i<10; i++) {
-    setTimeout (function () {
-      animationGoat.style.left = event.target.offsetLeft - i * 50 + 'px';
-      console.log ('animationGoat.style.left ' + animationGoat.style.left);
-      console.log (i);
-    }, i*500)
+  animationGoat.id = 'animationGoat';
+  animateGoat (event);
+  removeGoat ('event-container', 'goat');
+  // console.log ('bigSquareSide ' + bigSquareSide);
+  isSquareDone ();
+  // console.log ('bigSquareSide ' + bigSquareSide);
+  createEvent ();
+}
+
+function animateGoat (event) {
+  // console.log ('event.target.offsetLeft ' + event.target.offsetLeft);
+  if (goatType == 'goat-horizontal') {
+    let finalValue = 0;
+    animationGoat.style.top = event.target.offsetTop + 'px';
+    animate ('animationGoat', 'left', event.target.offsetLeft, finalValue, 1000);
+    // console.log('event.target.y ' + event.target.y);
+    y = event.target.y
+    for (let x = 1; x < n + 1; x++) {
+     // console.log ('square offsetTop' + findSquare ('game', x, y).offsetTop);
+     // console.log ('animationGoat.style.top ' + animationGoat.style.top);
+      if (findSquare ('game', x, y).isOccupied == true) {
+      removeLettuce (x, y);
+        // console.log('animationGoat.style.left ' + animationGoat.style.left);
+      }
+    }
+  }
+  if (goatType == 'goat-vertical') {
+    let finalValue = 500;
+    animationGoat.style.left = event.target.offsetLeft + 'px';
+    animate ('animationGoat', 'top', event.target.offsetTop, finalValue, 1000);
+    x = event.target.x
+    for (let y = 1; y < n + 1; y++) {
+     // console.log ('square offsetTop' + findSquare ('game', x, y).offsetTop);
+     // console.log ('animationGoat.style.top ' + animationGoat.style.top);
+      if (findSquare ('game', x, y).isOccupied == true) {
+      removeLettuce (x, y);
+        // console.log('animationGoat.style.left ' + animationGoat.style.left);
+      }
+    }
   }
 }
 
-function runGoat () {
-  animationGoat.style.left = event.target.offsetLeft - i * 50 + 'px';
+function animate (animationObjectId, animationAtributes, initialValue, finalValue, animationTime) {
+
+  let currentValue = initialValue;
+  let valueChange = (finalValue - initialValue) * 20 / animationTime
+  // console.log ('valueChange ' + valueChange);
+  let animationObject = document.getElementById(animationObjectId)
+  animationStep ();
+  function animationStep () {;
+    currentValue = currentValue + valueChange;
+    animationObject.style[animationAtributes] = currentValue + 'px';
+      // console.log ('currentValue ' + currentValue);
+      // console.log ('valueChange ' + valueChange);
+      // console.log ('animationGoat.style.left ' + animationGoat.style.left)
+    if (initialValue < finalValue) {
+      if (currentValue < finalValue) {
+        setTimeout (animationStep, 20);
+      } else {
+        animationObject.style[animationAtributes] = finalValue;
+      }
+    } else {
+      if (currentValue > finalValue) {
+        setTimeout (animationStep, 20);
+      } else {
+        animationObject.style[animationAtributes] = finalValue;
+      }
+    }
+    if (animationObjectId == 'animationGoat') {
+      console.log ('pomidorowa');
+        // console.log('animationGoat.style.left ' + animationGoat.style.left);
+        // console.log('finalValue ' + finalValue);
+      if (animationObject.style.left == finalValue + 'px' || animationObject.style.top == finalValue + 'px') {
+        removeGoat ('game', 'animationGoat');
+      }
+    }
+  }
+}
+
+function removeGoat (parentId, goatId) {
+  let parent = document.getElementById(parentId)
+  parent.removeChild(document.getElementById(goatId));
 }

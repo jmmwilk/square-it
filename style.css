@@ -66,12 +66,12 @@ body {
 	pointer-events: none;
 }
 
-.goat {
+#goat {
 	height: 50px;
 	width: 50px;
 }
 
- .animationGoat {
+ #animationGoat {
 	height: 50px;
 	width: 50px;
 	position: absolute;
