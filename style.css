@@ -9,6 +9,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;  
+  background-color: grey;
 }
 
 #application {
@@ -16,6 +17,7 @@ body {
 	height: 504px;
 	border: black solid 1px;
 	display: flex;
+	background-color: grey;
 }
 
 #game {

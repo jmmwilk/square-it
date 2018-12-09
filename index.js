@@ -1,3 +1,5 @@
+'use strict';
+
 let height;
 let width;
 let multiplication;
@@ -8,11 +10,6 @@ let x = 1;
 let y = 1;
 let dragStartX;
 let dragStartY;
-let smallestX = n;
-let smallestY = n;
-let highestX = 1;
-let highestY = 1;
-let bigSquareSide = 1;
 let points = 0;
 let draggedDrawing;
 let goatType;
@@ -27,11 +24,16 @@ function start () {
   game.ondragover= function (event) {
     event.preventDefault();
   }
+
+  let eventContainer = document.getElementById('side-bar');
+  eventContainer.ondrop= function (event) {
+    event.stopPropagation();
+  }
 }
 
 function drawSquaresInGame () {
 
-  for (i=0; i<gameSquaresCount; i++) {
+  for (let i=0; i<gameSquaresCount; i++) {
     let game = document.getElementById('game');
 
     x = count % n + 1;
@@ -96,7 +98,7 @@ function drawSquaresInRectangle (rectangle) {
   // console.log ('width' + width);
   // console.log ('height' + height);
   count = 0;
-  for (i=0; i<multiplication; i++) {
+  for (let i=0; i<multiplication; i++) {
     x = count % width + 1;
     y = Math.floor (count / width) + 1;
 
@@ -137,32 +139,30 @@ function dropRectangle (event) {
 }
 
 function isSquareDone () {
-  findCornerDimensions ();
-  // console.log ('bigSquareSide ' + bigSquareSide);
-  // console.log ('smallestX ' + smallestX);
-  // console.log ('smallestY ' + smallestY);
-  for (let x = smallestX; x <= smallestX + bigSquareSide - 1; x++) {
-    for (let y = smallestY; y <= smallestY + bigSquareSide - 1; y++) {
+  let dims = findCornerDimensions ();
+  if (dims.smallestX + dims.bigSquareSide - 1 > 10 || dims.smallestY + dims.bigSquareSide - 1 > 10) {
+    return;
+  }
+  for (let x = dims.smallestX; x <= dims.smallestX + dims.bigSquareSide - 1; x++) {
+    for (let y = dims.smallestY; y <= dims.smallestY + dims.bigSquareSide - 1; y++) {
       // console.log ('x ' + x);
       // console.log ('y ' + y);
-      // console.log(findSquare ('game', x, y).isOccupied);
+      console.log(x, y, findSquare ('game', x, y).isOccupied);
       if (findSquare ('game', x, y).isOccupied !== true) {
         // console.log ('square empty' + findSquare ('game', x, y).id);
         return
       }
     }
   }
-  points = points + bigSquareSide * bigSquareSide;
+  console.log ('dims.bigSquareSide ' + dims.bigSquareSide);
+  points = points + dims.bigSquareSide * dims.bigSquareSide;
   document.getElementById('points-container').innerText = points;
+
   newRound ();
 }
 
 function newRound () {
-  bigSquareSide = 1;
-  smallestX = n;
-  smallestY = n;
-  highestX = 1;
-  highestY = 1;
+  console.log('NEW ROUND');
   for (let x = 1; x < n + 1; x++) {
     for (let y = 1; y < n + 1; y++) {
       if (findSquare ('game', x, y).isOccupied == true) {
@@ -180,11 +180,17 @@ function removeLettuce (x, y) {
 }
 
 function findCornerDimensions () {
-
+  let bigSquareSide = 1;
+  let smallestX = n;
+  let smallestY = n;
+  let highestX = 1;
+  let highestY = 1;
+  let saladCount = 0;
   for (let x = 1; x < n + 1; x++) {
     for (let y = 1; y < n + 1; y++) {
       let square = findSquare ('game', x, y);
       if (square.isOccupied == true) {
+        saladCount = saladCount + 1
         if (square.x < smallestX) {
           smallestX = square.x;
         }
@@ -206,11 +212,22 @@ function findCornerDimensions () {
   if (bigSquareSide < highestY - smallestY + 1) {
     bigSquareSide = highestY - smallestY + 1
   }
-  // console.log ('bigSquareSide ' + bigSquareSide);
-  // console.log ('smallestX ' + smallestX);
-  // console.log ('smallestY ' + smallestY);
-  // console.log('highestX ' + highestX);
-  // console.log('highestY ' + highestY);
+  if (saladCount == 0) {
+    bigSquareSide = 0;
+    smallestX = 0;
+    smallestY = 0;
+    highestX = 0;
+    highestY = 0;
+  }
+  let cornerDimensions = {
+    bigSquareSide: bigSquareSide,
+    smallestX: smallestX,
+    smallestY: smallestY,
+    highestX: highestX,
+    highestY: highestY,
+  }
+  console.log ('cornerDimensions ', cornerDimensions);
+  return cornerDimensions;
 }
 
 function findCornerSquare (event) {
@@ -253,7 +270,7 @@ function addImage (parentId) {
 }
 
 function createGoat (parentId) {
-  goat = addImage(parentId);
+  const goat = addImage(parentId);
   if (goatType == 'goat-horizontal') {
     goat.src = 'goat-horizontal.png';
   }
@@ -317,46 +334,90 @@ function dropGoat (event) {
   animationGoat.id = 'animationGoat';
   animateGoat (event);
   removeGoat ('event-container', 'goat');
-  // console.log ('bigSquareSide ' + bigSquareSide);
-  isSquareDone ();
-  // console.log ('bigSquareSide ' + bigSquareSide);
   createEvent ();
 }
 
-function animateGoat (event) {
-  // console.log ('event.target.offsetLeft ' + event.target.offsetLeft);
-  if (goatType == 'goat-horizontal') {
-    let finalValue = 0;
-    animationGoat.style.top = event.target.offsetTop + 'px';
-    animate ('animationGoat', 'left', event.target.offsetLeft, finalValue, 1000);
-    // console.log('event.target.y ' + event.target.y);
-    y = event.target.y
-    for (let x = 1; x < n + 1; x++) {
-     // console.log ('square offsetTop' + findSquare ('game', x, y).offsetTop);
-     // console.log ('animationGoat.style.top ' + animationGoat.style.top);
-      if (findSquare ('game', x, y).isOccupied == true) {
-      removeLettuce (x, y);
-        // console.log('animationGoat.style.left ' + animationGoat.style.left);
-      }
+function horizontalGoatEats (currentValue, perpendicularValue) {
+  const y = perpendicularValue;
+
+  for (let x = 1; x < n + 1; x++) {
+    const square = findSquare ('game', x, y)
+
+    if (currentValue >= square.offsetLeft 
+      && currentValue < square.offsetLeft + 50
+      && square.isOccupied == true
+    ) {
+        removeLettuce (x, y);
     }
   }
-  if (goatType == 'goat-vertical') {
-    let finalValue = 500;
-    animationGoat.style.left = event.target.offsetLeft + 'px';
-    animate ('animationGoat', 'top', event.target.offsetTop, finalValue, 1000);
-    x = event.target.x
-    for (let y = 1; y < n + 1; y++) {
-     // console.log ('square offsetTop' + findSquare ('game', x, y).offsetTop);
-     // console.log ('animationGoat.style.top ' + animationGoat.style.top);
-      if (findSquare ('game', x, y).isOccupied == true) {
-      removeLettuce (x, y);
-        // console.log('animationGoat.style.left ' + animationGoat.style.left);
-      }
+}
+function verticalGoatEats (currentValue, perpendicularValue) {
+  const x = perpendicularValue;
+
+  for (let y = 1; y < n + 1; y++) {
+    const square = findSquare ('game', x, y)
+
+    if (currentValue >= square.offsetTop 
+      && currentValue < square.offsetTop + 50
+      && square.isOccupied == true
+    ) {
+        removeLettuce (x, y);
     }
   }
 }
 
-function animate (animationObjectId, animationAtributes, initialValue, finalValue, animationTime) {
+
+function animateGoat (event) {
+  const animationGoat = document.getElementById('animationGoat');
+  
+  if (goatType == 'goat-horizontal') {
+    let finalValueHorizontalGoat = document.getElementById('game').offsetLeft - 60;
+    const y = event.target.y;
+    animationGoat.style.top = event.target.offsetTop + 'px';
+
+    animate (
+      'animationGoat', 
+      'left', 
+      event.target.offsetLeft, 
+      finalValueHorizontalGoat, 
+      1000, 
+      function (currentValue) {
+        horizontalGoatEats (currentValue, y);
+        if (currentValue < finalValueHorizontalGoat) {
+          removeGoat ('game', 'animationGoat');
+          isSquareDone ();
+        }
+      }
+    );
+  }
+
+  if (goatType == 'goat-vertical') {
+    let finalValueVerticalGoat = document.getElementById('game').offsetTop + n*50;
+    const x = event.target.x;
+    animationGoat.style.left = event.target.offsetLeft + 'px';
+
+    animate (
+      'animationGoat', 
+      'top', 
+      event.target.offsetTop, 
+      finalValueVerticalGoat, 
+      1000, 
+      function (currentValue) {
+        verticalGoatEats (currentValue, x);
+        if (currentValue > finalValueVerticalGoat) {
+          removeGoat ('game', 'animationGoat');
+          isSquareDone ();
+        }
+      }
+    );
+  }
+
+  console.log('all lettuce removed');
+}
+
+
+
+function animate (animationObjectId, animationAtributes, initialValue, finalValue, animationTime, onStep) {
 
   let currentValue = initialValue;
   let valueChange = (finalValue - initialValue) * 20 / animationTime
@@ -366,9 +427,7 @@ function animate (animationObjectId, animationAtributes, initialValue, finalValu
   function animationStep () {;
     currentValue = currentValue + valueChange;
     animationObject.style[animationAtributes] = currentValue + 'px';
-      // console.log ('currentValue ' + currentValue);
-      // console.log ('valueChange ' + valueChange);
-      // console.log ('animationGoat.style.left ' + animationGoat.style.left)
+
     if (initialValue < finalValue) {
       if (currentValue < finalValue) {
         setTimeout (animationStep, 20);
@@ -382,13 +441,9 @@ function animate (animationObjectId, animationAtributes, initialValue, finalValu
         animationObject.style[animationAtributes] = finalValue;
       }
     }
-    if (animationObjectId == 'animationGoat') {
-      console.log ('pomidorowa');
-        // console.log('animationGoat.style.left ' + animationGoat.style.left);
-        // console.log('finalValue ' + finalValue);
-      if (animationObject.style.left == finalValue + 'px' || animationObject.style.top == finalValue + 'px') {
-        removeGoat ('game', 'animationGoat');
-      }
+
+    if (onStep) {
+      onStep(currentValue);
     }
   }
 }
