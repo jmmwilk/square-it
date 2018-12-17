@@ -13,8 +13,19 @@ let dragStartY;
 let points = 0;
 let draggedDrawing;
 let goatType;
+let isGameActive = true;
+
+function showGreetingScreen () {
+  document.getElementById('game').style.display = 'none';
+  document.getElementById('side-bar').style.display = 'none';
+  document.getElementById('play').onclick = start;
+  document.getElementById('game-over-screen').style.display = 'none'
+}
 
 function start () {
+  document.getElementById('greeting-screen').style.display = 'none';
+  document.getElementById('game').style.display = '';
+  document.getElementById('side-bar').style.display = '';
   drawSquaresInGame ();
   createRectangle ();
 
@@ -60,8 +71,8 @@ function drawSquare (parent, x, y) {
 
 
 function createRectangle () {
-  height = Math.floor (Math.random () * 3) + 1;
-  width = Math.floor (Math.random () * 2) + 1;
+  height = Math.floor (Math.random () * 9) + 1;
+  width = Math.floor (Math.random () * 9) + 1;
   multiplication = height * width;
   drawRectangle ()
 }
@@ -69,16 +80,19 @@ function createRectangle () {
 
 function drawRectangle () {
   let rectangle = document.createElement("div");
-  rectangle.onclick = turnRectangle
+  rectangle.onclick = turnRectangle;
   rectangle.id = 'rectangle';
   rectangle.className = 'rectangle';
   rectangle.style.height = (height * 50 + 2) + 'px';
   rectangle.style.width = (width * 50 + 2) + 'px';
   rectangle.draggable = true;
   rectangle.ondragstart = function(event) {
+    if (isGameActive == false) {
+      return;
+    }
     draggedDrawing = event.target;
     event.dataTransfer.setData("text/plain", event.target.parentNode.id);
-    console.log('ondragstart: ', event);
+    console.log('ondragstart: ', event);draggedDrawing
   }
   document.getElementById('event-container').appendChild(rectangle);
   drawSquaresInRectangle(rectangle);
@@ -86,6 +100,9 @@ function drawRectangle () {
 
 
 function turnRectangle () {
+  if (isGameActive == false) {
+    return;
+  }
   removeOldRectangle ();
   let oldHeight = height;
   let oldWidth = width;
@@ -113,60 +130,135 @@ function paintSquare (event) {
   chosenSquare.style.backgroundColor = 'green';
 }
 
+function gameOver () {
+  document.getElementById('game-over-screen').style.display = '';
+  document.getElementById('try-again').onclick = tryAgain;
+}
+
+function isGameOver () {
+  let count = 0;
+  count = isAnyAreaEmpty (width, height, count);
+  let oldHeight = height;
+  let oldWidth = width;
+  height = oldWidth;
+  width = oldHeight;
+  count = isAnyAreaEmpty (width, height, count);
+  oldHeight = height;
+  oldWidth = width;
+  height = oldWidth;
+  width = oldHeight;
+  if (count == 0) {
+    isGameActive = false;
+    setTimeout(gameOver, 1000);
+    console.log ('game over');
+  }
+}
+
+function isAnyAreaEmpty (width, height, count) {
+  for (x=1; x<n+1; x++) {
+    for (y=1; y<n+1; y++) {
+      let endX = x + width - 1;
+      let endY = y + height - 1;
+      if (endX <= n && endY <=n) {
+        if (isEmptyArea (x, endX, y, endY) == true) {
+          count = count + 1;
+          // console.log ('count ', count);
+          // console.log ('x ', x);
+          // console.log ('y ', y);
+          // console.log ('endX ', endX);
+          // console.log ('endY ', endY);
+          // console.log ('mozesz wstawic prostokat');
+        } else {
+          console.log ('count ', count);
+          console.log ('x ', x);
+          console.log ('y ', y);
+          console.log ('endX ', endX);
+          console.log ('endY ', endY);
+          console.log (' nie mozesz wstawic prostokat');
+        }
+      }
+    }
+  }
+  return count;
+}
+
+function tryAgain () {
+  removeOldRectangle ();
+  points = 0;
+  document.getElementById('points-container').innerText = points;
+  removeAllLettuce ();
+  start ();
+  isGameActive = true;
+  document.getElementById('game-over-screen').style.display = 'none';
+}
+
 function dropRectangle (event) {
   console.log('ondrop: ', event);
-  let cornerCoordinates = findCornerSquare (event);
+  let leftUpCornerCoordinates = findCornerSquare (event);
   
-  const startX = cornerCoordinates.cornerX
-  const endX = startX + width;
-  const startY = cornerCoordinates.cornerY;
-  const endY = startY + height;
-  // console.log ('cornerCoordinates.cornerX ' + cornerCoordinates.cornerX)
+  const startX = leftUpCornerCoordinates.cornerX
+  const endX = startX + width - 1;
+  const startY = leftUpCornerCoordinates.cornerY;
+  const endY = startY + height - 1;
+  // console.log ('leftUpCornerCoordinates.cornerX ' + leftUpCornerCoordinates.cornerX)
 
   if (isEmptyArea(startX, endX, startY, endY) == false) {
     return;
   }
 
-  for (let x = startX;  x < endX;  x++) {
-    for (let y = startY;  y < endY; y++) {
+  for (let x = startX;  x <= endX;  x++) {
+    for (let y = startY;  y <= endY; y++) {
       createLettuce ('game' + x + 'square' + y);
       findSquare ('game', x, y).isOccupied = true;
       removeOldRectangle ();
     }
   }
-  isSquareDone ();
-  createEvent ();
+
+  checkRoundSuccess();
 }
 
-function isSquareDone () {
+  
+function checkRoundSuccess() {
+  let dims = findBigSquare()
+  if (dims) {
+    newRound(dims);
+  } else {
+    createNewPiece ();
+  }
+}
+
+function newRound (dims) {
+  points = points + dims.bigSquareSide * dims.bigSquareSide;
+  document.getElementById('points-container').innerText = points;
+
+  setTimeout (function () {
+    removeAllLettuce ();
+    createNewPiece ();
+  } , 500);
+}
+
+function findBigSquare () {
   let dims = findCornerDimensions ();
   if (dims.smallestX + dims.bigSquareSide - 1 > 10 || dims.smallestY + dims.bigSquareSide - 1 > 10) {
     return;
   }
   for (let x = dims.smallestX; x <= dims.smallestX + dims.bigSquareSide - 1; x++) {
     for (let y = dims.smallestY; y <= dims.smallestY + dims.bigSquareSide - 1; y++) {
-      // console.log ('x ' + x);
-      // console.log ('y ' + y);
-      console.log(x, y, findSquare ('game', x, y).isOccupied);
       if (findSquare ('game', x, y).isOccupied !== true) {
         // console.log ('square empty' + findSquare ('game', x, y).id);
-        return
+        return false;
       }
     }
   }
-  console.log ('dims.bigSquareSide ' + dims.bigSquareSide);
-  points = points + dims.bigSquareSide * dims.bigSquareSide;
-  document.getElementById('points-container').innerText = points;
-
-  newRound ();
+  return dims;
 }
 
-function newRound () {
+function removeAllLettuce () {
   console.log('NEW ROUND');
   for (let x = 1; x < n + 1; x++) {
     for (let y = 1; y < n + 1; y++) {
       if (findSquare ('game', x, y).isOccupied == true) {
-        setTimeout (function () {removeLettuce (x, y)}, 500);        
+        removeLettuce (x, y);        
       }
     }
   }
@@ -233,11 +325,11 @@ function findCornerDimensions () {
 function findCornerSquare (event) {
   let dropX = event.target.x;
   let dropY = event.target.y;
-  let cornerCoordinates = {
+  let leftUpCornerCoordinates = {
     cornerX: dropX - (dragStartX - 1),
     cornerY: dropY - (dragStartY - 1)
   }
-  return cornerCoordinates;
+  return leftUpCornerCoordinates;
 }
 
 function findSquare (parentId, x, y) {
@@ -245,16 +337,19 @@ function findSquare (parentId, x, y) {
 }
 
 function isEmptyArea (startX, endX, startY, endY) {
-  // console.log ('startX ' + startX);
-  // console.log ('startY ' + startY);
-  // console.log ('endX ' + endX);
-  // console.log ('endY ' + endY);
+  console.log ('startX ' + startX);
+  console.log ('startY ' + startY);
+  console.log ('endX ' + endX);
+  console.log ('endY ' + endY);
 
-  for (let x = startX;  x < endX;  x++) {
-    for (let y = startY;  y < endY; y++) {
-      // console.log ('x' + x);
-      // console.log ('y' + y);
-      if (findSquare ('game', x, y).isOccupied == true) {
+  for (let x = startX;  x <= endX;  x++) {
+    for (let y = startY;  y <= endY; y++) {
+      if (x>=1 && x<=n && y>=1 && y<=n && endX<=n && endY<=n) {
+        if (findSquare ('game', x, y).isOccupied == true) {
+          return false;
+        }
+      } else {
+        console.log ('out of game')
         return false;
       }
     }
@@ -302,13 +397,14 @@ function createLettuce (parentId) {
   lettuce.src = 'lettuce.png';
 }
 
-function createEvent () {
+function createNewPiece () {
   let number = Math.floor (Math.random () * 3);
   if (number == 0) {
       chooseGoat ();
       createGoat ('event-container');
   } else {
     createRectangle ();
+    isGameOver ();
   }
 }
 
@@ -326,6 +422,7 @@ function dropDrawing (event) {
   if (draggedDrawing.id == 'goat') {
     dropGoat (event);
   }
+  draggedDrawing = {};
 }
 
 function dropGoat (event) {
@@ -334,7 +431,6 @@ function dropGoat (event) {
   animationGoat.id = 'animationGoat';
   animateGoat (event);
   removeGoat ('event-container', 'goat');
-  createEvent ();
 }
 
 function horizontalGoatEats (currentValue, perpendicularValue) {
@@ -385,7 +481,7 @@ function animateGoat (event) {
         horizontalGoatEats (currentValue, y);
         if (currentValue < finalValueHorizontalGoat) {
           removeGoat ('game', 'animationGoat');
-          isSquareDone ();
+          checkRoundSuccess ();
         }
       }
     );
@@ -406,7 +502,7 @@ function animateGoat (event) {
         verticalGoatEats (currentValue, x);
         if (currentValue > finalValueVerticalGoat) {
           removeGoat ('game', 'animationGoat');
-          isSquareDone ();
+          checkRoundSuccess ();
         }
       }
     );

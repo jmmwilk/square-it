@@ -9,8 +9,24 @@
     <script type="text/javascript" src="jquery-3.3.1.min.js"></script>
     <script type="text/javascript" src="index.js"></script>
   </head>
-  <body onload="start()">
+  <body onload="showGreetingScreen()">
     <div id="application">
+      <div id="greeting-screen">
+        <div id="title">
+          Square-it
+        </div>
+        <button id="play">
+        Play
+        </button>
+      </div>
+      <div id="game-over-screen">
+        <div id="game-over">
+          game over
+        </div>
+        <button id="try-again">
+          try again
+        </button>
+      </div>
       <div id="game">
       </div>
       <div id="side-bar">
@@ -21,4 +37,4 @@
       </div>
     </div>
   </body>
-</html>.;
+</html>
