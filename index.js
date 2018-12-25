@@ -85,6 +85,8 @@ function drawRectangle () {
   rectangle.className = 'rectangle';
   rectangle.style.height = (height * 50 + 2) + 'px';
   rectangle.style.width = (width * 50 + 2) + 'px';
+  console.log ('height ' + height);
+  console.log ('width ' + width);
   rectangle.draggable = true;
   rectangle.ondragstart = function(event) {
     if (isGameActive == false) {
