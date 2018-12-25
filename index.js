@@ -71,8 +71,8 @@ function drawSquare (parent, x, y) {
 
 
 function createRectangle () {
-  height = Math.floor (Math.random () * 9) + 1;
-  width = Math.floor (Math.random () * 9) + 1;
+  height = Math.floor (Math.random () * 3) + 1;
+  width = Math.floor (Math.random () * 2) + 1;
   multiplication = height * width;
   drawRectangle ()
 }
